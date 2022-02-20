@@ -1,0 +1,97 @@
+---
+title: "Assignment 2"
+author: "Chaoying Chen"
+date: "2/18/2022"
+output: html_document
+---
+
+#Input Data
+```{r}
+#load the library
+library(readr)
+library(caret) 
+library(class)
+library(e1071)
+library(class)
+library(gmodels)
+UB<-read_csv("UniversalBank.csv")
+head(UB)
+summary(UB)
+```
+##Dummies variables
+```{r}
+#creat dummies variables for education
+UB$Education1<-ifelse(UB$Education==1,1,0)
+UB$Education2<-ifelse(UB$Education==2,1,0)
+UB$Education3<-ifelse(UB$Education==3,1,0)
+head(UB)
+```
+## select the subset
+```{r}
+set.seed(500)
+TUB<-UB[,c(2:4,6:7,9:17)]
+head(TUB)
+TrainIndex<-createDataPartition(TUB$Income,p=0.6, list=FALSE) 
+Train.UB=TUB[TrainIndex,]
+Validation.UB=TUB[-TrainIndex,] 
+```
+#Train KNN and Matrix
+```{r}
+#Normalizing the dataset
+Train.N<-preProcess(Train.UB[,c(1:6)],method = c("center","scale"))
+zTrain<-predict(Train.N,Train.UB)
+zValid<-predict(Train.N,Validation.UB)
+#Train knn
+TrainlY<-Train.UB[,7]
+ValidlY<-Validation.UB[,7]
+Trainp<-Train.UB[,c(1:6,8:14)] 
+Validp<-Validation.UB[,c(1:6,8:14)]
+set.seed(500)
+Prediction <-knn(Trainp,Validp,cl=TrainlY$`Personal Loan`,k=1)
+head(Prediction)
+#Matrix
+Mat<-CrossTable(x=ValidlY$`Personal Loan`,y=Prediction,prop.chisq = FALSE)
+confusionMatrix(table(ValidlY$`Personal Loan`,Prediction))
+#We can see that the Accuracy is 0.9014 and the sensitivity is 0.9358. 
+```
+##classified the customer 
+```{r}
+Cusp<-Train.UB[1,]
+Cusp<-Cusp[,c(1:6,8:14)]
+Cusp<-as.data.frame(Cusp)
+Cusp[1,]<-c(40,10,84,2,2,0,0,0,1,1,0,1,0)
+TCus<-predict(Train.N,Cusp)
+Knncus<-knn(Trainp,TCus,cl=TrainlY$`Personal Loan`,k=1)
+head(Knncus)
+##The output of the new customer is 0. It means that the customer will not accept the personal loan.
+```
+##Find the best K
+```{r}
+set.seed(500)
+searchgirds<-expand.grid(k=c(1:10))
+Testmodel<-train(factor(`Personal Loan`)~Age+Experience+Income+Family+CCAvg+Mortgage+
+                    factor(`Securities Account`)+factor(`CD Account`)+Online+CreditCard+Education1+
+                    Education2+Education3,data =zTrain,method="knn",
+                  tuneGrid=searchgirds,preProcess='range')
+
+Testmodel
+
+```
+##Show the confusion matrix for the validation data that results from using the best k. 
+```{r}
+Prediction2 <-knn(Trainp,Validp,cl=TrainlY$`Personal Loan`,k=1)
+Mat2<-CrossTable(x=ValidlY$`Personal Loan`,y=Prediction,prop.chisq = FALSE)
+confusionMatrix(table(ValidlY$`Personal Loan`,Prediction2))
+```
+##Classify the customer using the best k. 
+```{r}
+Cusp2<-Train.UB[1,]
+Cusp2<-Cusp2[,c(1:6,8:14)]
+Cusp2<-as.data.frame(Cusp2)
+Cusp2[1,]<-c(40,10,84,2,2,0,0,0,1,1,0,1,0)
+TCus2<-predict(Train.N,Cusp2)
+Knncus2<-knn(Trainp,TCus2,cl=TrainlY$`Personal Loan`,k=1)
+head(Knncus2)
+#Use the best K,the output of the new customer is 0. It means that the new customer will not accept the personal loan.
+```
+
