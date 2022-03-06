@@ -1,0 +1,69 @@
+---
+title: "Assignment3"
+author: "Chaoying Chen"
+date: "2/28/2022"
+output: html_document
+---
+
+```{r }
+library(caret)
+library(class)
+library(e1071)
+library(gmodels)
+library(e1071)
+UB<-read.csv("UniversalBank.csv")
+summary(UB)
+```
+
+```{r}
+data<-UB[,c(13,14,10)]
+#str(data)
+data$Personal.Loan<-as.factor(data$Personal.Loan)
+data$Online<-as.factor(data$Online)
+data$CreditCard<-as.factor(data$CreditCard)
+set.seed(123)
+TrainUB<-createDataPartition(data$Personal.Loan,p=0.6,list = FALSE)
+Tdata<-data[TrainUB,]
+Vdata<-data[-TrainUB,]
+mytable<-xtabs(~Tdata$CreditCard+Tdata$Personal.Loan+Tdata$Online, data=Tdata) 
+ftable(mytable)  
+```
+The amount of people who accepts the loan is 51. The amount of people who has Credit Cards and is active in online service is 467+51. So the  probability that this customer will accept the loan offer is 0.0985.
+##Create two separate pivot tables for the training data. 
+```{r}
+table(Personal.Loan=Tdata$Personal.Loan, Online=Tdata$Online)
+table(Personal.Loan=Tdata$Personal.Loan, CreditCard=Tdata$CreditCard)
+```
+##Compute the following quantities 
+
+i. P(CC = 1 | Loan = 1) =84/(204+84)=0.2916
+
+ii. P(Online = 1 | Loan = 1)=176/(176+112)=0.6111
+
+iii. P(Loan = 1) (the proportion of loan acceptors)= (112+176)/3000=0.096
+
+iv. P(CC = 1 | Loan = 0)=777/(1935+777)=0.2865 
+
+v. P(Online = 1 | Loan = 0) =1611/(1611+1101)=0.5940
+
+vi. P(Loan = 0) =1-0.096=0.904
+
+##E
+P(Loan = 1 | CC = 1, Online = 1)
+
+=[P(CC=1|Loan=1)P(Online=1|Loan=1)P(Loan=1)]/P(CC=1,Online=1)
+
+=(0.2916*0.6111*0.096)/(((777+84)/3000)*((1611+176)/3000))
+
+=0.100
+
+##F
+I think that the probability of calculating directly is more accurate than Bayes.
+
+##G
+```{r}
+nb.model<-naiveBayes (data$Personal.Loan~data$CreditCard+data$Online, data=Tdata) 
+To_Predict=data.frame(CreditCard='Yes', Online='Yes') 
+predict(nb.model,To_Predict,type='raw')
+```
+The probability is 0.096.These two answers are very similiar.
