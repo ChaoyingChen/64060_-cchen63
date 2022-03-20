@@ -1,0 +1,86 @@
+---
+title: "Assignment4"
+author: "Chaoying Chen"
+date: "3/19/2022"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(tidyverse)
+library(factoextra)
+library(scales)
+data.phar<-read_csv("Pharmaceuticals.csv")
+str(data.phar)
+```
+##Scaling the data frame
+```{r}
+data.P<-data.phar[,3:11]
+data.P<-scale(data.P)
+distance<-get_dist(data.P)
+fviz_dist(distance)
+```
+##slect the K
+```{r}
+set.seed(123)
+fviz_nbclust(data.P,kmeans,method = "wss")
+fviz_nbclust(data.P,kmeans,method = "silhouette")
+```
+
+The chart shows that the elbow point 5 provides the best value for k. 
+```{r}
+set.seed(123)
+K5<-kmeans(data.P,centers = 5,nstart = 25)
+K5$centers
+K5$size
+fviz_cluster(K5,data = data.P)
+```
+
+Cluster1 is the companies with medium cap,low Beta, medium ROA,low REV growth.Cluster2 is the companies with small cap,high beta, low ROA, median asset turnover and Low net profit margin.Cluster 3 is the companies with low beta,high P/E ratio,low ROE and low NPM. Cluster 4 is the companies with big market cap, high ROE,ROA NPM and AT, and low leverage. Cluster5 is the companies with small cap, low beta,low ROE amd low asset turnover,high leverage and high rev growth. 
+```{r}
+data.V<-data.phar[,12:14]
+data.V$NUM<-c(1:21)
+CL1<-data.V[c(1,3,4,7,10,16,19,21),]
+CL1$cluster<-c(1,1,1,1,1,1,1,1)
+CL2<-data.V[c(6,8,12),]
+CL2$cluster<-c(2,2,2)
+CL3<-data.V[c(2,18),]
+CL3$cluster<-c(3,3)
+CL4<-data.V[c(11,13,15,17),]
+CL4$cluster<-c(4,4,4,4)
+CL5<-data.V[c(5,9,14,20),]
+CL5$cluster<-c(5,5,5,5)
+CL<-rbind(CL1,CL2)
+CL<-rbind(CL,CL3)
+CL<-rbind(CL,CL4)
+CL<-rbind(CL,CL5)
+counts<-table(CL$Median_Recommendation,CL$cluster)
+barplot(counts,main= "Median_Recommendation",xlab = "cluster",ylab = "counts",col=  c("lightblue","orange","lightpink","grey"),width =2,legend=rownames(counts))
+```
+
+We can find that cluster 1 is the mix of uk,us and switzerland.Cluster 2,3,4 are hold and buy.Cluster 5 is sell and buy.
+
+```{r}
+counts2<-table(CL$Location,CL$cluster)
+barplot(counts2,main="Location",xlab = "cluster",ylab = "counts2",col=  c("lightblue","orange","lightpink","grey","lightgreen","black","lightyellow"),legend=rownames(counts2))
+```
+
+We can find that cluster 1 is the mix of four locations.Cluster 2 is GERMANY and US,Cluster3 are  US and Canada, Cluster4 are US and UK. Cluster 5 are almost US, France and Ireland.
+
+```{r}
+counts3<-table(CL$Exchange,CL$cluster)
+barplot(counts3,main= "Exchange",xlab = "cluster",ylab = "counts3",col=  c("lightblue","orange","grey"),width=0.01,legend=rownames(counts3))
+```
+
+We can find that cluster 1,3,4,5 are all from NYSE.Cluster 2 is mixed NYSE, NASDAQ,AMEX.
+
+##Cluster1:NYSE market,medium cap and complex recommend stocks.
+
+##Cluster2:Mix market,small cap, Low net profit margin and popular stocks.
+
+##Cluster3:NYSE market,Medium cap and low risk stocks and popolar stocks.
+
+##Cluster4:NYSE market,big market cap, almost from US and popular stocks.
+
+##Cluster5:NYSE market, small cap,high revnye growth.
+
