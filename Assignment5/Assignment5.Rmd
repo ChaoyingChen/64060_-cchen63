@@ -1,0 +1,66 @@
+---
+title: "Assignment5"
+author: "Chaoying Chen"
+date: "4/15/2022"
+output: html_document
+---
+##Data Preprocessing.
+```{r}
+library(cluster)
+library(factoextra)
+library(dplyr)
+library(ggplot2)
+library(NbClust)
+library(readr)
+Cereals <- read_csv("Cereals.csv")
+Cereals<-na.omit(Cereals)
+Cereals$name<-as.factor(Cereals$name)
+Cereals$mfr<-as.factor(Cereals$mfr)
+Cereals$type<-as.factor(Cereals$type)
+summary(Cereals)
+```
+##Apply hierarchical clustering to the data
+```{r}
+Cer<-Cereals
+Cer[,c(4:16)]<-scale(Cereals[,c(4:16)])
+head(Cer)
+```
+##Use Agnes to compare the clustering
+```{r}
+single<-agnes(Cer[,c(4:16)],method = "single")
+complete<-agnes(Cer[,c(4:16)],method = "complete")
+averages<-agnes(Cer[,c(4:16)],method = "average")
+ward<-agnes(Cer[,c(4:16)],method = "ward")
+print(single$ac)
+print(complete$ac)
+print(averages$ac)
+print(ward$ac)
+```
+Best linkage is Ward.
+
+##Choose clusters
+```{r}
+fviz_nbclust(Cer[,c(4:16)],hcut,method = "wss")
+fviz_nbclust(Cer[,c(4:16)],hcut,method = "silhouette")
+d<-dist(Cer[,c(4:16)],method = "euclidean")
+hc_ward<-hclust(d,method = "ward.D2")
+plot(hc_ward,cex=0.6,hang = -1)
+rect.hclust(hc_ward,k=4,border=1:4)
+cl<-cutree(hc_ward,k=4)
+Cer$cl<-cl
+Cer$cl<-as.factor(Cer$cl)
+fviz_cluster(list(data=Cer[,c(4:16)],cluster=cl))
+```
+
+According to the silhouette approach, the value of K is 10. But from the original data and the cut Dendrogram plot, I think 4 is an appropriate value for cluster, although there are still some overlapping parts.
+
+##find a cluster of “healthy cereals.
+
+```{r}
+Cereals$cl<-cl
+Cer2<-summarise(group_by(Cereals,cl),calories=mean(calories),protein=mean(protein),fat=mean(fat),sodium=mean(sodium),fiber=mean(fiber),carbo=mean(carbo),sugars=mean(sugars),potass=mean(potass),vitamins=mean(vitamins),shelf=mean(shelf),weight=mean(weight),cups=mean(cups),rating=mean(rating))
+Health<-reshape2::melt(Cer2,id.var="cl")
+ggplot(Health,aes(x=cl,y=value,color=variable))+geom_point()+xlab("cluster")+ggtitle("Cluster Analysis")
+```
+
+I would choose the fourth category of recommendation. This is because, among other similarities, category IV is high in vitamins and lowest in sugar. Therefore the fourth category of foods is healthier.These products are: Bran_Chex，Bran_Flakes，	Cheerios，Corn_Chex，Corn_Chex，	Crispix，Double_Chex，Frosted_Mini-Wheats，Grape_Nuts_Flakes，Grape-Nuts，Just_Right_Crunchy__Nuggets，Kix，	Maypo，Product_19，	Puffed_Rice，	Puffed_Rice，	Raisin_Squares，	Raisin_Squares，	Rice_Krispies，Shredded_Wheat，Special_K，	Strawberry_Fruit_Wheats，	Total_Corn_Flakes，	Total_Whole_Grain，	Wheat_Chex，Wheaties.
